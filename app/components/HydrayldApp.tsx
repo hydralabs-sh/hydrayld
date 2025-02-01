@@ -1,13 +1,18 @@
 "use client"
 
-import { useState } from 'react';
+import React, { useState } from 'react';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import { RefreshCw, Wallet, ArrowRightLeft } from "lucide-react";
 
 export default function HydrayldApp() {
   const [loading, setLoading] = useState(false);
   const [solanaAddress, setSolanaAddress] = useState('');
   const [ethAddress, setEthAddress] = useState('');
 
-  // Simulated connect functions - these would be replaced with actual wallet connection logic
   const handleConnectSolana = () => {
     setSolanaAddress('SimulatedSolanaAddress123...');
   };
@@ -17,88 +22,150 @@ export default function HydrayldApp() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-4xl font-bold mb-8">HYDRAYLD</h1>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {/* Solana Section */}
-          <div className="p-6 rounded-lg bg-gray-800">
-            <h2 className="text-2xl font-semibold mb-4">Solana Deposit</h2>
-            <div className="mb-4">
-              <p className="text-gray-400">Address:</p>
-              <p className="font-mono break-all">
-                {solanaAddress ? solanaAddress : 'Not Connected'}
-              </p>
-              {!solanaAddress && (
-                <button 
-                  onClick={handleConnectSolana}
-                  className="mt-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg"
-                >
-                  Connect Solana
-                </button>
-              )}
-            </div>
-            {solanaAddress && (
-              <div className="mb-4">
-                <p className="text-gray-400">$HYDRASOL Balance:</p>
-                <p className="text-xl font-bold">0.00</p>
-              </div>
-            )}
+    <div className="min-h-screen bg-[#FFFFFF] text-[#1C1E1B]">
+      <div className="max-w-6xl mx-auto p-8">
+        <div className="flex items-center justify-between mb-12">
+          <div>
+            <h1 className="text-4xl font-bold text-[#1C1E1B]">HYDRA YIELD</h1>
+            <p className="text-[#5C7757] mt-2">Cross-chain Autonomous Yield Aggregator</p>
           </div>
+          <Badge 
+            variant="secondary" 
+            className="px-4 py-2 bg-[#F8FAF8] text-[#355130]"
+          >
+            Ethereum Agentic Hackathon 2025
+          </Badge>
+        </div>
 
-          {/* Ethereum Section */}
-          <div className="p-6 rounded-lg bg-gray-800">
-            <h2 className="text-2xl font-semibold mb-4">Ethereum Yield</h2>
-            <div className="mb-4">
-              <p className="text-gray-400">Address:</p>
-              <p className="font-mono break-all">
-                {ethAddress ? ethAddress : 'Not Connected'}
-              </p>
-              {!ethAddress && (
-                <button 
-                  onClick={handleConnectEth}
-                  className="mt-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg"
-                >
-                  Connect Ethereum
-                </button>
-              )}
-            </div>
-            {ethAddress && (
-              <div className="mb-4">
-                <p className="text-gray-400">HYDRAYLD Balance:</p>
-                <p className="text-xl font-bold">0.00</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+          {/* Solana Card */}
+          <Card className="bg-white shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-2xl text-[#1C1E1B]">Solana Deposit</CardTitle>
+              <CardDescription className="text-[#5C7757]">
+                Deposit your $HYDRASOL tokens
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div>
+                  <p className="text-sm text-[#5C7757] mb-1">Address</p>
+                  <p className="font-mono text-sm break-all text-[#1C1E1B]">
+                    {solanaAddress || 'Not Connected'}
+                  </p>
+                </div>
+                {!solanaAddress ? (
+                  <Button 
+                    onClick={handleConnectSolana}
+                    className="w-full bg-[#355130] hover:bg-[#5C7757] text-white"
+                  >
+                    <Wallet className="mr-2 h-4 w-4" />
+                    Connect Solana
+                  </Button>
+                ) : (
+                  <div>
+                    <p className="text-sm text-[#5C7757] mb-1">$HYDRASOL Balance</p>
+                    <p className="text-2xl font-bold text-[#1C1E1B]">0.00</p>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            </CardContent>
+          </Card>
+
+          {/* Ethereum Card */}
+          <Card className="bg-white shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-2xl text-[#1C1E1B]">Ethereum Yield</CardTitle>
+              <CardDescription className="text-[#5C7757]">
+                Monitor your yield performance
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div>
+                  <p className="text-sm text-[#5C7757] mb-1">Address</p>
+                  <p className="font-mono text-sm break-all text-[#1C1E1B]">
+                    {ethAddress || 'Not Connected'}
+                  </p>
+                </div>
+                {!ethAddress ? (
+                  <Button 
+                    onClick={handleConnectEth}
+                    className="w-full bg-[#355130] hover:bg-[#5C7757] text-white"
+                  >
+                    <Wallet className="mr-2 h-4 w-4" />
+                    Connect Ethereum
+                  </Button>
+                ) : (
+                  <div>
+                    <p className="text-sm text-[#5C7757] mb-1">HYDRAYLD Balance</p>
+                    <p className="text-2xl font-bold text-[#1C1E1B]">0.00</p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Action Section */}
-        <div className="mt-8">
-          <button
-            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold disabled:opacity-50"
-            disabled={!solanaAddress || !ethAddress || loading}
-            onClick={() => setLoading(true)}
-          >
-            {loading ? 'Processing...' : 'Deposit $HYDRASOL'}
-          </button>
-        </div>
+        <Card className="bg-white shadow-sm mb-8">
+          <CardHeader>
+            <CardTitle className="text-[#1C1E1B]">Bridge Actions</CardTitle>
+            <CardDescription className="text-[#5C7757]">
+              Deposit and manage your cross-chain yield
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              className="w-full bg-[#355130] hover:bg-[#5C7757] text-white transition-colors"
+              size="lg"
+              disabled={!solanaAddress || !ethAddress || loading}
+              onClick={() => setLoading(true)}
+            >
+              {loading ? (
+                <>
+                  <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <ArrowRightLeft className="mr-2 h-4 w-4" />
+                  Deposit $HYDRASOL
+                </>
+              )}
+            </Button>
+          </CardContent>
+        </Card>
 
         {/* Status Section */}
-        <div className="mt-4">
-          <h3 className="text-xl font-semibold mb-2">Status</h3>
-          <div className="space-y-2">
-            <p className="text-gray-400">
-              • Solana Connection: {solanaAddress ? 'Connected' : 'Not Connected'}
-            </p>
-            <p className="text-gray-400">
-              • Ethereum Connection: {ethAddress ? 'Connected' : 'Not Connected'}
-            </p>
-            <p className="text-gray-400">
-              • Bridge Status: {loading ? 'Processing' : 'Ready'}
-            </p>
-          </div>
-        </div>
+        <Card className="bg-white shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-[#1C1E1B]">System Status</CardTitle>
+            <CardDescription className="text-[#5C7757]">
+              Real-time connection and bridge status
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className={`p-4 rounded-lg ${solanaAddress ? 'bg-[#F8FAF8]' : 'bg-gray-50'}`}>
+              <div className="text-[#1C1E1B] font-medium mb-1">Solana Connection</div>
+              <div className="text-[#5C7757]">
+                {solanaAddress ? 'Connected and ready' : 'Not connected'}
+              </div>
+            </div>
+            <div className={`p-4 rounded-lg ${ethAddress ? 'bg-[#F8FAF8]' : 'bg-gray-50'}`}>
+              <div className="text-[#1C1E1B] font-medium mb-1">Ethereum Connection</div>
+              <div className="text-[#5C7757]">
+                {ethAddress ? 'Connected and ready' : 'Not connected'}
+              </div>
+            </div>
+            <div className="p-4 rounded-lg bg-gray-50">
+              <div className="text-[#1C1E1B] font-medium mb-1">Bridge Status</div>
+              <div className="text-[#5C7757]">
+                {loading ? 'Processing transaction...' : 'Ready for deposits'}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
