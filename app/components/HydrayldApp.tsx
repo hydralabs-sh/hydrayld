@@ -26,12 +26,19 @@ type PhantomProvider = {
   solana?: any;
 };
 
-type EthereumProvider = {
+interface EthereumProvider {
   isMetaMask?: boolean;
+  isBraveWallet?: boolean;
   request: (args: { method: string; params?: any[] }) => Promise<any>;
-  on: (event: string, callback: (args: any) => void) => void;
-  removeListener: (event: string, callback: (args: any) => void) => void;
-};
+  on: (eventName: string, handler: (...args: any[]) => void) => void;
+  removeListener: (eventName: string, handler: (...args: any[]) => void) => void;
+}
+
+interface Window {
+  ethereum?: EthereumProvider | {
+    providers?: EthereumProvider[];
+  };
+}
 
 export default function HydrayldApp() {
   const [loading, setLoading] = useState(false);
@@ -163,10 +170,10 @@ export default function HydrayldApp() {
   const handleConnectArbitrum = async () => {
     try {
       // Get all Ethereum providers
-      const providers = window.ethereum?.providers || [window.ethereum];
+      const providers = (window.ethereum as any)?.providers || [window.ethereum];
       
       // Find MetaMask specifically
-      const metaMaskProvider = providers.find((provider: any) => 
+      const metaMaskProvider = providers.find((provider: EthereumProvider) => 
         provider.isMetaMask && !provider.isBraveWallet
       );
   
@@ -189,7 +196,7 @@ export default function HydrayldApp() {
           console.log('Successfully connected to MetaMask:', accounts[0]);
         }
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Failed to connect to MetaMask:', error);
       alert('Failed to connect to MetaMask. Please try again.');
     }
