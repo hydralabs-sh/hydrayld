@@ -5,22 +5,16 @@ import "./globals.css";
 declare global {
   interface Window {
     phantom?: {
-      solana?: any;
+      solana?: unknown;
     };
-    ethereum?: any;
+    ethereum?: {
+      isMetaMask?: boolean;
+      providers?: unknown[];
+      request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
+      on: (event: string, callback: (args: unknown) => void) => void;
+      removeListener: (event: string, callback: (args: unknown) => void) => void;
+    };
   }
-}
-
-interface Window {
-  phantom?: {
-    solana?: any;
-  };
-  ethereum?: {
-    isMetaMask?: boolean;
-    request: (args: { method: string; params?: any[] }) => Promise<any>;
-    on: (event: string, callback: (args: any) => void) => void;
-    removeListener: (event: string, callback: (args: any) => void) => void;
-  };
 }
 
 const geistSans = Geist({

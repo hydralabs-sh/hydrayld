@@ -30,8 +30,10 @@ interface EthereumProvider {
   isMetaMask?: boolean;
   isBraveWallet?: boolean;
   request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
-  on(event: 'accountsChanged' | 'chainChanged', handler: (args: any) => void): void;
-  removeListener(event: 'accountsChanged' | 'chainChanged', handler: (args: any) => void): void;
+  on(event: 'accountsChanged', handler: (accounts: string[]) => void): void;
+  on(event: 'chainChanged', handler: (chainId: string) => void): void;
+  removeListener(event: 'accountsChanged', handler: (accounts: string[]) => void): void;
+  removeListener(event: 'chainChanged', handler: (chainId: string) => void): void;
 }
 
 export default function HydrayldApp() {
@@ -103,8 +105,9 @@ export default function HydrayldApp() {
   useEffect(() => {
     const checkPhantom = async () => {
       try {
-        const phantom = window?.phantom?.solana;
-        if (phantom?.isPhantom) {
+        const phantom = window?.phantom?.solana as PhantomProvider | undefined;
+        
+        if (phantom && 'isPhantom' in phantom) {
           console.log('Phantom provider detected');
           setPhantomProvider(phantom);
         }
@@ -163,12 +166,10 @@ export default function HydrayldApp() {
 
   const handleConnectArbitrum = async () => {
     try {
-      // Get all Ethereum providers
-      const providers = ((window as any).ethereum?.providers || [window.ethereum]) as EthereumProvider[];
-      
-      // Find MetaMask specifically
-      const metaMaskProvider = providers.find((provider: EthereumProvider) => 
-        provider.isMetaMask && !provider.isBraveWallet
+      // Get all Ethereum providers and find MetaMask
+      const providers = (window.ethereum?.providers || [window.ethereum]) as EthereumProvider[];
+      const metaMaskProvider = providers.find((provider): provider is EthereumProvider => 
+        Boolean(provider?.isMetaMask && !provider?.isBraveWallet)
       );
   
       if (!metaMaskProvider) {
