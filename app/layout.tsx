@@ -2,6 +2,27 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
+declare global {
+  interface Window {
+    phantom?: {
+      solana?: any;
+    };
+    ethereum?: any;
+  }
+}
+
+interface Window {
+  phantom?: {
+    solana?: any;
+  };
+  ethereum?: {
+    isMetaMask?: boolean;
+    request: (args: { method: string; params?: any[] }) => Promise<any>;
+    on: (event: string, callback: (args: any) => void) => void;
+    removeListener: (event: string, callback: (args: any) => void) => void;
+  };
+}
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],

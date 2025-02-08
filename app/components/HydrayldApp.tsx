@@ -1,24 +1,198 @@
-"use client"
+"use client";
 
-import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { RefreshCw, Wallet, ArrowRightLeft } from "lucide-react";
+
+// Arbitrum Sepolia Chain ID and params
+const ARBITRUM_SEPOLIA_CHAIN_ID = '0x66eee';
+const ARBITRUM_SEPOLIA_PARAMS = {
+  chainId: ARBITRUM_SEPOLIA_CHAIN_ID,
+  chainName: 'Arbitrum Sepolia',
+  nativeCurrency: {
+    name: 'Ethereum',
+    symbol: 'ETH',
+    decimals: 18
+  },
+  rpcUrls: ['https://sepolia-rollup.arbitrum.io/rpc'],
+  blockExplorerUrls: ['https://sepolia.arbiscan.io']
+};
+
+type PhantomProvider = {
+  connect: () => Promise<{ publicKey: { toString: () => string } }>;
+  isPhantom?: boolean;
+  solana?: any;
+};
+
+type EthereumProvider = {
+  isMetaMask?: boolean;
+  request: (args: { method: string; params?: any[] }) => Promise<any>;
+  on: (event: string, callback: (args: any) => void) => void;
+  removeListener: (event: string, callback: (args: any) => void) => void;
+};
 
 export default function HydrayldApp() {
   const [loading, setLoading] = useState(false);
   const [solanaAddress, setSolanaAddress] = useState('');
-  const [ethAddress, setEthAddress] = useState('');
+  const [arbitrumAddress, setArbitrumAddress] = useState('');
+  const [phantomProvider, setPhantomProvider] = useState<PhantomProvider | null>(null);
+  const [metamaskProvider, setMetamaskProvider] = useState<EthereumProvider | null>(null);
 
-  const handleConnectSolana = () => {
-    setSolanaAddress('SimulatedSolanaAddress123...');
+  // Setup MetaMask provider and event listeners
+  useEffect(() => {
+    const setupMetaMask = () => {
+      // Only set MetaMask provider if it's actually MetaMask
+      if (window.ethereum?.isMetaMask) {
+        console.log('MetaMask provider detected');
+        setMetamaskProvider(window.ethereum as EthereumProvider);
+      } else {
+        console.log('MetaMask provider not found');
+        setMetamaskProvider(null);
+      }
+    };
+
+    setupMetaMask();
+
+    // Listen for provider changes
+    const handleProviderChanged = () => {
+      console.log('Provider changed, updating MetaMask provider');
+      setupMetaMask();
+    };
+
+    window.addEventListener('ethereum#initialized', handleProviderChanged);
+    return () => {
+      window.removeEventListener('ethereum#initialized', handleProviderChanged);
+    };
+  }, []);
+
+  // Setup MetaMask event listeners
+  useEffect(() => {
+    if (metamaskProvider && arbitrumAddress) {
+      console.log('Setting up MetaMask event listeners');
+      
+      const handleAccountsChanged = (accounts: string[]) => {
+        console.log('MetaMask accounts changed:', accounts);
+        if (accounts.length === 0) {
+          setArbitrumAddress('');
+        } else {
+          setArbitrumAddress(accounts[0]);
+        }
+      };
+
+      const handleChainChanged = (chainId: string) => {
+        console.log('MetaMask chain changed:', chainId);
+        if (chainId !== ARBITRUM_SEPOLIA_CHAIN_ID) {
+          setArbitrumAddress('');
+        }
+      };
+
+      metamaskProvider.on('accountsChanged', handleAccountsChanged);
+      metamaskProvider.on('chainChanged', handleChainChanged);
+
+      return () => {
+        metamaskProvider.removeListener('accountsChanged', handleAccountsChanged);
+        metamaskProvider.removeListener('chainChanged', handleChainChanged);
+      };
+    }
+  }, [metamaskProvider, arbitrumAddress]);
+
+  // Setup Phantom connection check
+  useEffect(() => {
+    const checkPhantom = async () => {
+      try {
+        const phantom = window?.phantom?.solana;
+        if (phantom?.isPhantom) {
+          console.log('Phantom provider detected');
+          setPhantomProvider(phantom);
+        }
+      } catch (error) {
+        console.error("Phantom provider not found:", error);
+      }
+    };
+
+    checkPhantom();
+  }, []);
+
+  const handleConnectSolana = async () => {
+    try {
+      if (!phantomProvider) {
+        window.open('https://phantom.app/', '_blank');
+        return;
+      }
+
+      console.log('Connecting to Phantom...');
+      const { publicKey } = await phantomProvider.connect();
+      console.log('Connected to Phantom:', publicKey.toString());
+      setSolanaAddress(publicKey.toString());
+    } catch (error) {
+      console.error("Error connecting to Solana:", error);
+    }
   };
 
-  const handleConnectEth = () => {
-    setEthAddress('0xSimulatedEthAddress123...');
+  const switchToArbitrumSepolia = async (provider: EthereumProvider) => {
+    try {
+      console.log('Switching to Arbitrum Sepolia...');
+      await provider.request({
+        method: 'wallet_switchEthereumChain',
+        params: [{ chainId: ARBITRUM_SEPOLIA_CHAIN_ID }],
+      });
+      console.log('Successfully switched to Arbitrum Sepolia');
+      return true;
+    } catch (switchError: any) {
+      if (switchError.code === 4902) {
+        try {
+          console.log('Adding Arbitrum Sepolia network...');
+          await provider.request({
+            method: 'wallet_addEthereumChain',
+            params: [ARBITRUM_SEPOLIA_PARAMS]
+          });
+          console.log('Successfully added Arbitrum Sepolia');
+          return true;
+        } catch (addError) {
+          console.error("Error adding Arbitrum Sepolia:", addError);
+          return false;
+        }
+      }
+      console.error("Error switching to Arbitrum Sepolia:", switchError);
+      return false;
+    }
+  };
+
+  const handleConnectArbitrum = async () => {
+    try {
+      // Get all Ethereum providers
+      const providers = window.ethereum?.providers || [window.ethereum];
+      
+      // Find MetaMask specifically
+      const metaMaskProvider = providers.find((provider: any) => 
+        provider.isMetaMask && !provider.isBraveWallet
+      );
+  
+      if (!metaMaskProvider) {
+        console.log('MetaMask not detected');
+        window.open('https://metamask.io/', '_blank');
+        return;
+      }
+  
+      console.log('Requesting MetaMask accounts...');
+      const accounts = await metaMaskProvider.request({
+        method: 'eth_requestAccounts'
+      });
+  
+      console.log('MetaMask accounts:', accounts);
+      if (accounts.length > 0) {
+        const switched = await switchToArbitrumSepolia(metaMaskProvider);
+        if (switched) {
+          setArbitrumAddress(accounts[0]);
+          console.log('Successfully connected to MetaMask:', accounts[0]);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to connect to MetaMask:', error);
+      alert('Failed to connect to MetaMask. Please try again.');
+    }
   };
 
   return (
@@ -43,7 +217,7 @@ export default function HydrayldApp() {
             <CardHeader>
               <CardTitle className="text-2xl text-[#1C1E1B]">Solana Deposit</CardTitle>
               <CardDescription className="text-[#5C7757]">
-                Deposit your $HYDRASOL tokens
+                Connect Phantom wallet to deposit $HYDRASOL
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -60,7 +234,7 @@ export default function HydrayldApp() {
                     className="w-full bg-[#355130] hover:bg-[#5C7757] text-white"
                   >
                     <Wallet className="mr-2 h-4 w-4" />
-                    Connect Solana
+                    Connect Phantom
                   </Button>
                 ) : (
                   <div>
@@ -72,12 +246,12 @@ export default function HydrayldApp() {
             </CardContent>
           </Card>
 
-          {/* Ethereum Card */}
+          {/* Arbitrum Card */}
           <Card className="bg-white shadow-sm">
             <CardHeader>
-              <CardTitle className="text-2xl text-[#1C1E1B]">Ethereum Yield</CardTitle>
+              <CardTitle className="text-2xl text-[#1C1E1B]">Arbitrum Yield</CardTitle>
               <CardDescription className="text-[#5C7757]">
-                Monitor your yield performance
+                Connect MetaMask to Arbitrum Sepolia
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -85,16 +259,16 @@ export default function HydrayldApp() {
                 <div>
                   <p className="text-sm text-[#5C7757] mb-1">Address</p>
                   <p className="font-mono text-sm break-all text-[#1C1E1B]">
-                    {ethAddress || 'Not Connected'}
+                    {arbitrumAddress || 'Not Connected'}
                   </p>
                 </div>
-                {!ethAddress ? (
+                {!arbitrumAddress ? (
                   <Button 
-                    onClick={handleConnectEth}
+                    onClick={handleConnectArbitrum}
                     className="w-full bg-[#355130] hover:bg-[#5C7757] text-white"
                   >
                     <Wallet className="mr-2 h-4 w-4" />
-                    Connect Ethereum
+                    Connect MetaMask
                   </Button>
                 ) : (
                   <div>
@@ -119,7 +293,7 @@ export default function HydrayldApp() {
             <Button
               className="w-full bg-[#355130] hover:bg-[#5C7757] text-white transition-colors"
               size="lg"
-              disabled={!solanaAddress || !ethAddress || loading}
+              disabled={!solanaAddress || !arbitrumAddress || loading}
               onClick={() => setLoading(true)}
             >
               {loading ? (
@@ -130,7 +304,7 @@ export default function HydrayldApp() {
               ) : (
                 <>
                   <ArrowRightLeft className="mr-2 h-4 w-4" />
-                  Deposit $HYDRASOL
+                  Bridge to Arbitrum
                 </>
               )}
             </Button>
@@ -147,15 +321,15 @@ export default function HydrayldApp() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className={`p-4 rounded-lg ${solanaAddress ? 'bg-[#F8FAF8]' : 'bg-gray-50'}`}>
-              <div className="text-[#1C1E1B] font-medium mb-1">Solana Connection</div>
+              <div className="text-[#1C1E1B] font-medium mb-1">Phantom Wallet</div>
               <div className="text-[#5C7757]">
-                {solanaAddress ? 'Connected and ready' : 'Not connected'}
+                {solanaAddress ? 'Connected to Solana' : 'Not connected'}
               </div>
             </div>
-            <div className={`p-4 rounded-lg ${ethAddress ? 'bg-[#F8FAF8]' : 'bg-gray-50'}`}>
-              <div className="text-[#1C1E1B] font-medium mb-1">Ethereum Connection</div>
+            <div className={`p-4 rounded-lg ${arbitrumAddress ? 'bg-[#F8FAF8]' : 'bg-gray-50'}`}>
+              <div className="text-[#1C1E1B] font-medium mb-1">MetaMask</div>
               <div className="text-[#5C7757]">
-                {ethAddress ? 'Connected and ready' : 'Not connected'}
+                {arbitrumAddress ? 'Connected to Arbitrum Sepolia' : 'Not connected'}
               </div>
             </div>
             <div className="p-4 rounded-lg bg-gray-50">
