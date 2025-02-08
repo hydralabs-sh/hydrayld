@@ -23,21 +23,15 @@ const ARBITRUM_SEPOLIA_PARAMS = {
 type PhantomProvider = {
   connect: () => Promise<{ publicKey: { toString: () => string } }>;
   isPhantom?: boolean;
-  solana?: any;
+  solana?: unknown;
 };
 
 interface EthereumProvider {
   isMetaMask?: boolean;
   isBraveWallet?: boolean;
-  request: (args: { method: string; params?: any[] }) => Promise<any>;
-  on: (eventName: string, handler: (...args: any[]) => void) => void;
-  removeListener: (eventName: string, handler: (...args: any[]) => void) => void;
-}
-
-interface Window {
-  ethereum?: EthereumProvider | {
-    providers?: EthereumProvider[];
-  };
+  request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
+  on(event: 'accountsChanged' | 'chainChanged', handler: (args: any) => void): void;
+  removeListener(event: 'accountsChanged' | 'chainChanged', handler: (args: any) => void): void;
 }
 
 export default function HydrayldApp() {
@@ -147,8 +141,8 @@ export default function HydrayldApp() {
       });
       console.log('Successfully switched to Arbitrum Sepolia');
       return true;
-    } catch (switchError: any) {
-      if (switchError.code === 4902) {
+    } catch (switchError: unknown) {
+      if (typeof switchError === 'object' && switchError && 'code' in switchError && switchError.code === 4902) {
         try {
           console.log('Adding Arbitrum Sepolia network...');
           await provider.request({
@@ -170,7 +164,7 @@ export default function HydrayldApp() {
   const handleConnectArbitrum = async () => {
     try {
       // Get all Ethereum providers
-      const providers = (window.ethereum as any)?.providers || [window.ethereum];
+      const providers = ((window as any).ethereum?.providers || [window.ethereum]) as EthereumProvider[];
       
       // Find MetaMask specifically
       const metaMaskProvider = providers.find((provider: EthereumProvider) => 
@@ -184,9 +178,9 @@ export default function HydrayldApp() {
       }
   
       console.log('Requesting MetaMask accounts...');
-      const accounts = await metaMaskProvider.request({
+      const accounts = (await metaMaskProvider.request({
         method: 'eth_requestAccounts'
-      });
+      })) as string[];
   
       console.log('MetaMask accounts:', accounts);
       if (accounts.length > 0) {
